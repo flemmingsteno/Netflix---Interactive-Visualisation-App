@@ -1,0 +1,218 @@
+---
+title: "DV exam"
+output: RMD
+---
+
+---
+title: "Netflix interactive visualisation"
+author: "Flemming Steno Kjær"
+date: "24/02/2022"
+---
+
+```{r setup, include=FALSE}
+library(shiny)
+library(shinythemes)
+library(ggplot2)
+library(ggpubr)
+library(pheatmap)
+library(ggrepel)
+library(plotly)
+library(tidyverse)
+iris <- iris
+netflix<- read.csv("Netflix subscription fee Dec-2021.csv")
+
+selected_countries<- data.frame(sub=c("basic", "standard", "premium"),
+               price_Denmark=c(netflix[14,6],netflix[14,7],netflix[14,8]),
+               price_Turkey=c(netflix[60,6],netflix[60,7],netflix[60,8]),
+               price_Liechtenstein=c(netflix[34,6],netflix[34,7],netflix[34,8]),
+               price_South_Korea=c(netflix[54,6],netflix[54,7],netflix[54,8]))
+
+```
+
+
+```{r include=FALSE}
+
+ui <- fluidPage(theme = shinytheme("cerulean"),
+                navbarPage(
+                  "Netflix - Interactive Visualisation App",
+                  tabPanel("Scatter & Violin Distrubution",
+                           
+                          sidebarPanel(
+                            selectInput(
+                              inputId = "SelectPlot",
+                              label = "Choose an Subscription tier",
+                              choices = c("Basic", "Standard", "Premium"),
+                              selected = "Basic"
+                              ),                           
+                            sliderInput("Price", "Price in dollar:",
+                              min = 0,
+                              max = 28,
+                              value = c(0,28)
+                              ),                          
+                            sliderInput(
+                              "Shows", "Library Size:", 
+                              min = 2000, 
+                              max = 8000, 
+                              value = c(2000,8000))
+                              ),
+
+                        
+                        
+                          mainPanel(
+                             h1("graphs"),
+                             h4("Scatterplot for sub-price and Library size"),
+                             plotOutput("distPlot2"),
+                             h4("Violinplot for the distrubution"),
+                             plotOutput("distPlot4"),
+                            
+                            ),
+                        
+                        
+                        ),
+                  tabPanel("Subscription Tier Cost",
+                           
+                          sidebarPanel(
+                            sliderInput(
+                              "Shows1", "Library size", 
+                              min = 2000, 
+                              max = 8000, 
+                              value = c(2000,8000)),
+                              plotOutput("distPlot3"),),
+
+                        
+                        
+                          splitLayout(
+                            cellWidths = 400,
+                             tagList(selectInput(
+                              inputId = "SelectCountry1",
+                              label = "Select country for plot 1",
+                              choices = c("Denmark", "Turkey", "Liechtenstein","South Korea" ),
+                              selected = "Denmark"
+                              ),
+                               "Bar chart for Subscription tier",plotOutput("distPlot5")),
+                             tagList(selectInput(
+                              inputId = "SelectCountry2",
+                              label = "Select country for plot 1",
+                              choices = c("Denmark", "Turkey", "Liechtenstein","South Korea" ),
+                              selected = "Turkey"
+                              ),
+                               "Bar chart for Subscription tier",plotOutput("distPlot6"))
+                             
+                             
+                            ),
+                        
+                        
+                        ),
+                          
+                  tabPanel("Ordered Subscription Cost to Countries",
+                           
+                           mainPanel(
+                             h1("Bar chart"),
+                             h4("Decending order of price in dollars"),
+                             cellhigh = 400,
+                             plotOutput("distPlot7")),
+                            
+                            ),
+                           
+                  )
+      
+)
+
+```
+
+
+
+```{r echo=TRUE}
+
+server <- function(input, output) {
+  
+  
+    output$distPlot2 <- renderPlot({
+    
+    
+     if(input$SelectPlot =="Basic"){
+      b <- ggplot(netflix, aes(x=Total.Library.Size, y=Cost.Per.Month...Basic....)) + geom_point() + geom_text_repel(aes(label = Country), size = 3) + xlim(input$Shows[1],input$Shows[2]) + ylim(input$Price[1],input$Price[2])+ylab("Subscription fee")+xlab("Library size")
+     }
+    
+     if(input$SelectPlot =="Standard"){
+      b <- ggplot(netflix, aes(x=Total.Library.Size, y=Cost.Per.Month...Standard....)) + geom_point() + geom_text_repel(aes(label = Country), size = 3) + xlim(input$Shows[1],input$Shows[2]) + ylim(input$Price[1],input$Price[2])+ylab("Subscription fee")+xlab("Library size")
+     }
+    
+     if(input$SelectPlot =="Premium"){
+      b <- ggplot(netflix, aes(x=Total.Library.Size, y=Cost.Per.Month...Premium....)) + geom_point() + geom_text_repel(aes(label = Country), size = 3) + xlim(input$Shows[1],input$Shows[2]) + ylim(input$Price[1],input$Price[2])+ylab("Subscription fee")+xlab("Library size")
+     }
+  
+    
+    b
+  })
+    output$distPlot3 <- renderPlot( ggplot(netflix, aes(x=Total.Library.Size)) + geom_histogram(binwidth = 200) + xlim(input$Shows1[1],input$Shows1[2])+ylab("Amount of countries")+xlab("Library size"))
+                                    
+    output$distPlot4 <- renderPlot({
+      
+     if(input$SelectPlot =="Basic"){
+      d <- ggplot(netflix, aes(x=Total.Library.Size, y=Cost.Per.Month...Basic....)) + geom_violin() + xlim(input$Shows[1],input$Shows[2]) + ylim(input$Price[1],input$Price[2])+ylab("Subscription fee")+xlab("Library size")
+     }
+    
+     if(input$SelectPlot =="Standard"){
+      d <- ggplot(netflix, aes(x=Total.Library.Size, y=Cost.Per.Month...Standard....)) + geom_violin() + xlim(input$Shows[1],input$Shows[2]) + ylim(input$Price[1],input$Price[2])+ylab("Subscription fee")+xlab("Library size")
+     }
+    
+     if(input$SelectPlot =="Premium"){
+      d <- ggplot(netflix, aes(x=Total.Library.Size, y=Cost.Per.Month...Premium....)) + geom_violin() + xlim(input$Shows[1],input$Shows[2]) + ylim(input$Price[1],input$Price[2])+ylab("Subscription fee")+xlab("Library size")
+     }
+     
+      d 
+    })
+    
+    output$distPlot5 <- renderPlot({
+      
+      if (input$SelectCountry1 =="Denmark"){ 
+      e <- (ggplot(selected_countries, aes(x=sub, y=price_Denmark, fill=sub)) + geom_bar(stat="identity")+ geom_text(aes(label=price_Denmark), vjust=1.6, color="white", size=3.5)+ theme_minimal())+ylab("Price in dollars")+xlab("Subscription tiers")
+      }
+      if (input$SelectCountry1 =="Turkey"){ 
+      e <- (ggplot(selected_countries, aes(x=sub, y=price_Turkey, fill=sub)) + geom_bar(stat="identity")+ geom_text(aes(label=price_Turkey), vjust=1.6, color="white", size=3.5)+ theme_minimal())+ylab("Price in dollars")+xlab("Subscription tiers")
+      }
+      if (input$SelectCountry1 =="Liechtenstein"){ 
+      e <- (ggplot(selected_countries, aes(x=sub, y=price_Liechtenstein, fill=sub)) + geom_bar(stat="identity")+ geom_text(aes(label=price_Liechtenstein), vjust=1.6, color="white", size=3.5)+ theme_minimal())+ylab("Price in dollars")+xlab("Subscription tiers")
+      }
+      if (input$SelectCountry1 =="South Korea"){ 
+      e <- (ggplot(selected_countries, aes(x=sub, y=price_South_Korea, fill=sub)) + geom_bar(stat="identity")+ geom_text(aes(label=price_South_Korea), vjust=1.6, color="white", size=3.5)+ theme_minimal())+ylab("Price in dollars")+xlab("Subscription tiers")
+      }
+      
+      e
+    })
+    
+    output$distPlot6 <- renderPlot({
+      
+      if (input$SelectCountry2 =="Denmark"){ 
+      f <- (ggplot(selected_countries, aes(x=sub, y=price_Denmark, fill=sub)) + geom_bar(stat="identity")+ geom_text(aes(label=price_Denmark), vjust=1.6, color="white", size=3.5)+ theme_minimal())+ylab("Price in dollars")+xlab("Subscription tiers")
+      }
+      if (input$SelectCountry2 =="Turkey"){ 
+      f <- (ggplot(selected_countries, aes(x=sub, y=price_Turkey, fill=sub)) + geom_bar(stat="identity")+ geom_text(aes(label=price_Turkey), vjust=1.6, color="white", size=3.5)+ theme_minimal())+ylab("Price in dollars")+xlab("Subscription tiers")
+      }
+      if (input$SelectCountry2 =="Liechtenstein"){ 
+      f <- (ggplot(selected_countries, aes(x=sub, y=price_Liechtenstein, fill=sub)) + geom_bar(stat="identity")+ geom_text(aes(label=price_Liechtenstein), vjust=1.6, color="white", size=3.5)+ theme_minimal())+ylab("Price in dollars")+xlab("Subscription tiers")
+      }
+      if (input$SelectCountry2 =="South Korea"){ 
+      f <- (ggplot(selected_countries, aes(x=sub, y=price_South_Korea, fill=sub)) + geom_bar(stat="identity")+ geom_text(aes(label=price_South_Korea), vjust=1.6, color="white", size=3.5)+ theme_minimal())+ylab("Price in dollars")+xlab("Subscription tiers")
+      }
+      
+      f
+    })
+    
+    
+    output$distPlot7 <- renderPlot({ (ggplot(netflix, aes(x= reorder(Country,Cost.Per.Month...Standard...., border = "black"), y=Cost.Per.Month...Standard....)) + geom_bar(stat="identity", horiz=TRUE, color="black",fill="skyblue")+ geom_text(aes(label=Cost.Per.Month...Standard....), vjust=1.6, color="black", size=3.5)+ theme_minimal()+ coord_flip())+ylab("Price in dollars for a standard Subscription")+xlab("Countries")
+      
+    }, height = 1200)
+               
+    
+    
+    #output$dist
+}#Server
+
+```
+
+
+```{r echo=TRUE}
+shinyApp(ui = ui, server = server)
+```
